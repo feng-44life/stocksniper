@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>股票探照灯 · 让AI帮你快速分析K线图</title>
+    <meta name="description" content="股票探照灯是一款免费开源的Windows效率工具，一键截图，调用DeepSeek AI分析股票数据，自动脱敏，隐私优先。">
+    <meta name="keywords" content="股票分析,AI分析,DeepSeek,K线图,效率工具,股票探照灯">
+    <meta name="author" content="StockSniper Team">
+    <!-- 优先使用现代浏览器特性 -->
+    <meta name="robots" content="index, follow">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%231E2A3A'/%3E%3Cpath fill='%23FFD966' d='M30 45 L45 30 L55 35 L70 20 L75 30 L60 45 L55 55 L40 70 L30 65 L38 50Z'/%3E%3Ctext x='50' y='85' font-size='20' text-anchor='middle' fill='white' font-weight='bold'%3E🔦%3C/text%3E%3C/svg%3E">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+            line-height: 1.5;
+            scroll-behavior: smooth;
+        }
+
+        /* 自定义字体 */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap');
+
+        /* 容器 */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* 按钮 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            background: none;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #1e2a3a;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .btn-primary:hover {
+            background: #0f172a;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -12px rgba(0,0,0,0.2);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+        }
+
+        .btn-outline:hover {
+            border-color: #1e2a3a;
+            background: #f1f5f9;
+        }
+
+        .btn-ghost {
+            background: #eef2ff;
+            color: #1e2a3a;
+        }
+
+        .btn-ghost:hover {
+            background: #e0e7ff;
+        }
+
+        /* 导航栏 */
+        .navbar {
+            padding: 20px 0;
+            border-bottom: 1px solid #e2e8f0;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(8px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 1.5rem;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #1e2a3a 0%, #2d3e50 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .logo-icon {
+            background: #1e2a3a;
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #334155;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #0f172a;
+        }
+
+        /* Hero 区域 */
+        .hero {
+            padding: 80px 0 64px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #0f172a, #2c3e50);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .hero .subhead {
+            font-size: 1.25rem;
+            color: #475569;
+            max-width: 680px;
+            margin: 0 auto 32px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #eef2ff;
+            color: #1e2a3a;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+
+        .download-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .win-badge {
+            background: #e2e8f0;
+            border-radius: 32px;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 功能卡片 */
+        .features {
+            padding: 80px 0;
+            background: white;
+            border-radius: 48px 48px 0 0;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .section-desc {
+            text-align: center;
+            color: #475569;
+            max-width: 640px;
+            margin: 0 auto 56px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .feature-card {
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 28px 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.02), 0 2px 6px rgba(0,0,0,0.05);
+            border: 1px solid #eef2f6;
+            transition: all 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: #cbd5e1;
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            font-size: 2.4rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            color: #475569;
+        }
+
+        /* 下载区 */
+        .download-section {
+            background: #f1f5f9;
+            border-radius: 48px;
+            margin: 40px 0 60px;
+            padding: 64px 32px;
+            text-align: center;
+        }
+
+        .version-info {
+            font-family: monospace;
+            background: #e2e8f0;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            margin-bottom: 20px;
+        }
+
+        /* 用户群入口 */
+        .community {
+            background: white;
+            border-radius: 32px;
+            border: 1px solid #e2e8f0;
+            padding: 48px 32px;
+            margin: 60px 0;
+            text-align: center;
+        }
+
+        .qr-placeholder {
+            background: #f1f5f9;
+            width: 160px;
+            height: 160px;
+            margin: 24px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 24px;
+            font-size: 2.8rem;
+            border: 2px dashed #cbd5e1;
+        }
+
+        .inline-code {
+            background: #eef2ff;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        /* 更新日志 */
+        .changelog {
+            background: #fefce8;
+            border-left: 4px solid #facc15;
+            padding: 24px 28px;
+            border-radius: 28px;
+            margin: 40px 0;
+        }
+
+        /* 页脚 */
+        .footer {
+            border-top: 1px solid #e2e8f0;
+            padding: 48px 0 32px;
+            margin-top: 48px;
+            color: #475569;
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        .footer-links a {
+            text-decoration: none;
+            color: #334155;
+        }
+
+        .footer-links a:hover {
+            color: #0f172a;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.4rem;
+            }
+            .nav-inner {
+                flex-direction: column;
+            }
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 18px;
+            }
+            .container {
+                padding: 0 20px;
+            }
+            .download-section {
+                padding: 40px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 导航栏 -->
+<nav class="navbar">
+    <div class="container nav-inner">
+        <div class="logo">
+            <span class="logo-icon">🔦</span>
+            <span>股票探照灯</span>
+        </div>
+        <div class="nav-links">
+            <a href="#features">功能</a>
+            <a href="#download">下载</a>
+            <a href="#community">社群</a>
+            <a href="#changelog">更新</a>
+            <a href="#" id="openSettingsTip" style="background:#eef2ff; padding:6px 14px; border-radius:40px;">⚙️ 用户指南</a>
+        </div>
+    </div>
+</nav>
+
+<main>
+    <!-- Hero 区域 -->
+    <div class="container hero">
+        <div class="badge">
+            🔧 纯工具 · 不提供投资建议 · 开源精神
+        </div>
+        <h1>让AI帮你快速分析K线图</h1>
+        <div class="subhead">
+            一键截图，调用你自己的 DeepSeek API，自动脱敏，隐私优先。<br>
+            效率工具，不是投顾，不荐股。
+        </div>
+        <div class="download-group">
+            <a href="#download" class="btn btn-primary" style="font-size: 1.1rem;">
+                ⬇️ 免费下载 Windows 版
+            </a>
+            <a href="#features" class="btn btn-outline">
+                📖 了解详情
+            </a>
+        </div>
+        <div style="margin-top: 28px;">
+            <span class="win-badge">🪟 Windows 10/11 | 离线可用 | 需自备 API Key</span>
+        </div>
+    </div>
+
+    <!-- 功能介绍卡片区 -->
+    <div id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">核心能力 · 专注效率</h2>
+            <p class="section-desc">
+                不存储任何隐私数据，所有分析直接对接AI平台，你的API Key只保存在本地凭据管理器。
+            </p>
+            <div class="grid-2">
+                <div class="feature-card">
+                    <div class="feature-icon">📸</div>
+                    <h3>一键探照灯截图</h3>
+                    <p>按 <kbd style="background:#eef2ff; padding:2px 6px; border-radius:8px;">Ctrl+Shift+A</kbd>，拖拽框选任意区域，自动保存并进入AI分析流程，告别手动保存图片的繁琐。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>DeepSeek / 自定义AI</h3>
+                    <p>支持 DeepSeek、OpenAI 风格接口。填入你自己的 API Key，所有调用费用由你自己掌控，安全透明。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📚</div>
+                    <h3>交易手册 + 风格定制</h3>
+                    <p>上传 PDF/Word 策略手册，AI 将严格按照你的规则解读数据；一句话描述交易风格，让分析更贴合个人体系。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>数据脱敏 · 隐私保护</h3>
+                    <p>自动隐藏账户、资金、持仓、身份证等敏感信息，可选择脱敏级别。云端仅传输脱敏后的技术数据，保护你的核心隐私。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>对话式分析界面</h3>
+                    <p>类似 ChatGPT 的主窗口，保存上下文，支持连续提问。历史分析随时回顾，让AI成为你的复盘助手。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>完全本地存储 API Key</h3>
+                    <p>使用 Windows 凭据管理器加密存储，config.json 中永不出现明文密钥，即使分享配置文件也不会泄露。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 下载区域（重要） -->
+    <div id="download" class="container download-section">
+        <div class="version-info">📦 最新版本 v2.0.0 · 2025年3月发布</div>
+        <h2 style="font-size: 2rem; margin-bottom: 12px;">立即获取股票探照灯</h2>
+        <p style="margin-bottom: 28px; color: #334155;">免费使用 · 无功能限制 · 支持 Windows 10/11</p>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 18px;">
+            <a href="#" id="downloadBtn" class="btn btn-primary" style="background: #0f172a; padding: 14px 36px; font-size: 1.1rem;">
+                ⬇️ 下载 Windows 版 (exe)
+            </a>
+            <a href="#" id="copyTipBtn" class="btn btn-outline">
+                📋 备用下载 (网盘)
+            </a>
+        </div>
+        <p style="margin-top: 28px; font-size: 0.85rem; background: #eef2ff; display: inline-block; padding: 6px 16px; border-radius: 50px;">
+            ⚠️ 需自备 DeepSeek API Key (首次使用在软件内设置)
+        </p>
+        <div style="margin-top: 24px;">
+            <span style="font-size: 0.75rem; color: #5b6e8c;">📌 安装说明：下载后双击运行 → 按 Ctrl+Shift+S 配置API Key → 开始分析</span>
+        </div>
+    </div>
+
+    <!-- 用户社群入口 -->
+    <div id="community" class="container community">
+        <div style="font-size: 2.5rem;">💬</div>
+        <h3 style="font-size: 1.8rem; margin: 12px 0 8px;">加入用户交流群</h3>
+        <p>获取最新版本、使用技巧、优先反馈通道。一起让工具更顺手。</p>
+        <div class="qr-placeholder">
+            📱 微信群
+        </div>
+        <div style="background: #f8fafc; border-radius: 40px; padding: 10px 20px; display: inline-block; margin-top: 8px;">
+            👥 添加小助手微信：<strong>stocksniper_helper</strong>  (备注“探照灯”)
+        </div>
+        <p style="margin-top: 24px; font-size: 0.85rem;">或发送邮件至 <a href="mailto:support@stocksniper.pro">support@stocksniper.pro</a> 获取帮助</p>
+    </div>
+
+    <!-- 更新日志 + 免责声明 -->
+    <div class="container" id="changelog">
+        <div class="changelog">
+            <h3 style="display: flex; align-items: center; gap: 8px;">📋 更新日志 <span style="font-size: 0.7rem; background:#facc15; padding:2px 8px; border-radius: 30px;">持续迭代</span></h3>
+            <ul style="margin-top: 16px; margin-left: 20px; color: #2c3e50;">
+                <li><strong>v2.0.0 (2025-03-27)</strong> — 全新主对话界面；数据脱敏引擎；本地凭据管理器存储API Key；支持策略手册上传。</li>
+                <li><strong>v1.5.0 (2025-03-15)</strong> — 悬浮窗分析结果，快捷键自定义，OCR识别优化。</li>
+                <li><strong>v1.0.0 (2025-02-20)</strong> — 首个公开发布版，基础截图+DeepSeek集成。</li>
+            </ul>
+            <p style="margin-top: 20px; font-size: 0.85rem;">🔧 所有版本均不含任何投资建议功能，仅为数据整理与效率工具。</p>
+        </div>
+    </div>
+
+    <!-- 合规声明 + 隐私说明 -->
+    <div class="container" style="background: #ffffff; border-radius: 32px; padding: 32px; margin-bottom: 20px; border: 1px solid #eef2f6;">
+        <div style="display: flex; flex-wrap: wrap; gap: 32px; justify-content: space-between;">
+            <div style="flex:1;">
+                <h4 style="margin-bottom: 12px;">⚠️ 重要免责声明</h4>
+                <p style="font-size: 0.85rem; color: #4b5563;">股票探照灯是<strong>数据分析效率工具</strong>，不提供任何证券投资咨询、买卖建议或收益承诺。AI分析结果基于用户提供的截图数据生成，仅供参考，用户需独立决策并自担风险。本软件不推荐任何个股，不涉及自动交易。</p>
+            </div>
+            <div style="flex:1;">
+                <h4 style="margin-bottom: 12px;">🔒 隐私政策</h4>
+                <p style="font-size: 0.85rem; color: #4b5563;">本软件<strong>不收集任何用户数据</strong>。API Key 存储在本地 Windows 凭据管理器，截图及策略手册仅在用户本地处理，发送至 AI 平台前经过自动脱敏。我们不保存任何分析记录，用户可随时清空本地配置。</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 页脚 -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-links">
+            <div>
+                <strong>股票探照灯</strong><br>
+                © 2025 StockSniper Team<br>
+                🧰 效率工具 · 开源精神
+            </div>
+            <div>
+                <a href="#">关于我们</a><br>
+                <a href="#">使用指南</a><br>
+                <a href="#">GitHub 仓库</a>
+            </div>
+            <div>
+                <a href="#">API Key 获取教程</a><br>
+                <a href="#">隐私政策全文</a><br>
+                <a href="#">用户协议</a>
+            </div>
+        </div>
+        <div style="text-align: center; border-top: 1px solid #e2e8f0; padding-top: 28px; margin-top: 16px; font-size: 0.75rem;">
+            🛡️ 本工具不构成任何投资建议，股市有风险，投资需谨慎。<br>
+            本软件与 DeepSeek、OpenAI 等第三方 AI 平台独立，用户自行承担 API 调用费用及相关责任。
+        </div>
+    </div>
+</footer>
+
+<script>
+    // 模拟下载逻辑：因实际没有提供exe直链，这里展示友好的引导（后续可替换为真实链接）
+    const downloadBtn = document.getElementById('downloadBtn');
+    const copyTipBtn = document.getElementById('copyTipBtn');
+    const settingsTip = document.getElementById('openSettingsTip');
+
+    // 真实部署时请将下载链接替换为你自己的服务器或网盘地址
+    const realDownloadUrl = "https://stocksniper.pro/download/StockSniper_Setup_v2.0.exe";   // 占位链接
+    const baiduUrl = "https://pan.baidu.com/s/1xxxxxx";  // 示例备用链接
+
+    downloadBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // 显示提示窗：因为目前还未上传真实exe，提供友好引导（后续你替换成真实链接即可）
+        if (confirm("✅ 即将下载 Windows 版安装包 (v2.0.0)\n\n如果下载未开始，可复制备用链接。\n\n确定要下载吗？")) {
+            // 实际生产环境将 window.location.href 改为真实下载链接
+            window.open(realDownloadUrl, '_blank');
+            alert("如果浏览器未自动下载，请检查弹窗拦截，或点击「备用下载」获取网盘链接。");
+        }
+    });
+
+    copyTipBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigator.clipboard.writeText("百度网盘链接：https://pan.baidu.com/s/1模拟地址 提取码: snip \n阿里云盘：https://www.aliyundrive.com/s/xxxxx\n\n更多下载方式请加入用户群获取。");
+        alert("备用网盘链接已复制到剪贴板！\n正式版本上线后我们会提供高速直链。");
+    });
+
+    settingsTip.addEventListener('click', (e) => {
+        e.preventDefault();
+        alert("📘 首次使用指南：\n1. 下载并运行 StockSniper.exe\n2. 按 Ctrl+Shift+S 打开设置\n3. 填入你的 DeepSeek API Key（申请地址：platform.deepseek.com）\n4. 描述你的交易风格（必填）\n5. 按 Ctrl+Shift+A 框选K线图，AI自动分析！\n\n⚠️ 软件为工具，不提供任何投资建议。");
+    });
+
+    // 简单的滚动锚点平滑
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const targetId = this.getAttribute('href');
+            if (targetId === "#" || targetId === "") return;
+            const targetElem = document.querySelector(targetId);
+            if (targetElem) {
+                e.preventDefault();
+                targetElem.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    });
+    
+    // 增加一点交互统计提醒 (百度统计占位, 后续可替换)
+    console.log("StockSniper 官网 loaded | 数据脱敏工具，无投资建议");
+</script>
+
+<!-- 可添加简单的百度统计/Google Analytics 占位，部署时替换真实ID -->
+<!-- 
+<script>
+  var _hmt = _hmt || [];
+  (function() {
+    var hm = document.createElement("script");
+    hm.src = "https://hm.baidu.com/hm.js?YOUR_BAIDU_ID";
+    var s = document.getElementsByTagName("script")[0]; 
+    s.parentNode.insertBefore(hm, s);
+  })();
+</script>
+-->
+</body>
+</html>
